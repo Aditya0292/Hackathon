@@ -1,27 +1,67 @@
 "use client"
 import React, { useState } from 'react';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Upload, FileText, TrendingUp, AlertCircle, CheckCircle, Download, LogOut, Sun, Moon, Loader } from 'lucide-react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Upload, FileText, TrendingUp, AlertCircle, CheckCircle, Download, LogOut, Sun, Moon, Loader, Users } from 'lucide-react';
 
 const API_URL = 'http://localhost:5000/api';
 
-const Navbar = ({ showActions = false, onNewUpload, onDownload, onLogout, isDark, onToggleTheme }) => {
+const Navbar = ({ showActions = false, onNewUpload, onDownload, onLogout, isDark, onToggleTheme, instructors = [], selectedInstructor, onInstructorSelect }) => {
+  const [showMenu, setShowMenu] = useState(false);
+
   return (
     <nav className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm border-b`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <h1 className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>EduSense</h1>
+          
           <div className="flex items-center gap-3">
+            {instructors.length > 0 && (
+              <div className="relative">
+                <button 
+                  onClick={() => setShowMenu(!showMenu)}
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}
+                >
+                  <Users size={18} />
+                  <span className="hidden sm:inline">{selectedInstructor || 'Select Instructor'}</span>
+                  <svg className={`w-4 h-4 transition-transform ${showMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showMenu && (
+                  <div className={`absolute right-0 mt-2 w-64 rounded-lg shadow-lg z-50 ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="py-2 max-h-96 overflow-y-auto">
+                      {instructors.map((inst) => (
+                        <button
+                          key={inst.id}
+                          onClick={() => {
+                            onInstructorSelect(inst);
+                            setShowMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-blue-500 hover:text-white ${
+                            selectedInstructor === inst.name ? 'bg-blue-600 text-white' : isDark ? 'text-gray-200' : 'text-gray-700'
+                          }`}
+                        >
+                          <div className="font-medium">{inst.name}</div>
+                          <div className="text-xs opacity-75">{inst.filename}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {onToggleTheme && (
               <button onClick={onToggleTheme} className={`p-2 rounded-lg ${isDark ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-700'}`}>
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
               </button>
             )}
+            
             {showActions && (
               <div className="flex items-center gap-3">
-                {onNewUpload && <button onClick={onNewUpload} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"><Upload size={18} />New Upload</button>}
-                {onDownload && <button onClick={onDownload} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"><Download size={18} />Download Report</button>}
-                {onLogout && <button onClick={onLogout} className={`px-4 py-2 border rounded-lg ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'}`}><LogOut size={18} className="inline mr-2" />Logout</button>}
+                {onNewUpload && <button onClick={onNewUpload} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"><Upload size={18} /><span className="hidden sm:inline">New Upload</span></button>}
+                {onDownload && <button onClick={onDownload} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"><Download size={18} /><span className="hidden sm:inline">Download</span></button>}
+                {onLogout && <button onClick={onLogout} className={`px-4 py-2 border rounded-lg ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'}`}><LogOut size={18} className="inline mr-2" /><span className="hidden sm:inline">Logout</span></button>}
               </div>
             )}
           </div>
@@ -57,8 +97,12 @@ const LoginPage = ({ onLogin, isDark, onToggleTheme }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    if (!username || !password) {
+      setError('Please enter both username and password');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -88,6 +132,12 @@ const LoginPage = ({ onLogin, isDark, onToggleTheme }) => {
     setPassword('demo123');
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    }
+  };
+
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-blue-50'} flex items-center justify-center p-4`}>
       <div className="absolute top-4 right-4">
@@ -104,16 +154,16 @@ const LoginPage = ({ onLogin, isDark, onToggleTheme }) => {
           <h2 className={`text-2xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Admin Login</h2>
         </div>
         
-        <form onSubmit={handleLogin}>
+        <div>
           <div className="mb-4">
             <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Email</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              onKeyPress={handleKeyPress}
               className={`w-full px-4 py-3 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
               placeholder="admin@edusense.com"
-              required
             />
           </div>
           
@@ -123,9 +173,9 @@ const LoginPage = ({ onLogin, isDark, onToggleTheme }) => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={handleKeyPress}
               className={`w-full px-4 py-3 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
               placeholder="••••••••"
-              required
             />
           </div>
 
@@ -136,22 +186,21 @@ const LoginPage = ({ onLogin, isDark, onToggleTheme }) => {
           )}
 
           <button
-            type="submit"
+            onClick={handleSubmit}
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 mb-3 flex items-center justify-center gap-2"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 mb-3 flex items-center justify-center gap-2 disabled:bg-blue-400"
           >
             {loading ? <Loader className="animate-spin" size={20} /> : null}
             {loading ? 'Logging in...' : 'Login'}
           </button>
           
           <button
-            type="button"
             onClick={handleDemo}
             className={`w-full border py-3 rounded-lg font-semibold ${isDark ? 'border-blue-500 text-blue-400 hover:bg-blue-900/20' : 'border-blue-600 text-blue-600 hover:bg-blue-50'}`}
           >
             Use Demo Credentials
           </button>
-        </form>
+        </div>
 
         <div className={`mt-6 p-4 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'}`}>
           <p className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Demo Credentials:</p>
@@ -163,7 +212,7 @@ const LoginPage = ({ onLogin, isDark, onToggleTheme }) => {
   );
 };
 
-const UploadPage = ({ onAnalysisComplete, onBack, isDark, onToggleTheme }) => {
+const UploadPage = ({ onInstructorsLoaded, onBack, isDark, onToggleTheme }) => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -200,7 +249,7 @@ const UploadPage = ({ onAnalysisComplete, onBack, isDark, onToggleTheme }) => {
       const data = await response.json();
 
       if (data.success) {
-        onAnalysisComplete(data.data);
+        onInstructorsLoaded(data.instructors);
       } else {
         setError(data.error || 'Upload failed');
       }
@@ -253,7 +302,7 @@ const UploadPage = ({ onAnalysisComplete, onBack, isDark, onToggleTheme }) => {
             className="mt-6 w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {uploading ? <Loader className="animate-spin" size={20} /> : <Upload size={20} />}
-            {uploading ? 'Analyzing...' : 'Analyze Feedback'}
+            {uploading ? 'Processing...' : 'Upload & Split by Instructor'}
           </button>
         </div>
       </div>
@@ -261,7 +310,52 @@ const UploadPage = ({ onAnalysisComplete, onBack, isDark, onToggleTheme }) => {
   );
 };
 
-const DashboardPage = ({ analysisData, onNewUpload, onLogout, isDark, onToggleTheme }) => {
+const InstructorSelectionPage = ({ instructors, onSelectInstructor, onBack, isDark, onToggleTheme }) => {
+  return (
+    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <Navbar showActions={false} onLogout={onBack} isDark={isDark} onToggleTheme={onToggleTheme} />
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <div className={`rounded-2xl shadow-xl border p-8 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <h2 className={`text-3xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Select Instructor</h2>
+          <p className={`mb-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Found {instructors.length} instructors. Select one to analyze their feedback.
+          </p>
+
+          <div className="grid gap-4">
+            {instructors.map((instructor) => (
+              <button
+                key={instructor.id}
+                onClick={() => onSelectInstructor(instructor)}
+                className={`p-6 rounded-lg border-2 text-left hover:border-blue-500 transition-all ${
+                  isDark ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-white border-gray-200 hover:bg-blue-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={`text-xl font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {instructor.name}
+                    </h3>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {instructor.filename}
+                    </p>
+                  </div>
+                  <Users size={32} className={isDark ? 'text-blue-400' : 'text-blue-600'} />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DashboardPage = ({ analysisData, instructorName, instructors, onNewUpload, onInstructorSelect, onLogout, isDark, onToggleTheme }) => {
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  
   const summary = analysisData?.summary || {};
   
   const handleDownloadReport = async () => {
@@ -269,17 +363,76 @@ const DashboardPage = ({ analysisData, onNewUpload, onLogout, isDark, onToggleTh
       const response = await fetch(`${API_URL}/download-report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: analysisData })
+        body: JSON.stringify({ data: analysisData, instructor: instructorName })
       });
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'feedback-report.txt';
+      const date = new Date().toISOString().split('T')[0];
+      a.download = `${instructorName.replace(/\s+/g, '_')}_feedback_${date}.txt`;
       a.click();
     } catch (err) {
       alert('Failed to download report');
+    }
+  };
+
+  const handleDownloadCSV = async () => {
+    try {
+      const response = await fetch(`${API_URL}/download-csv`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          data: analysisData, 
+          instructor: instructorName 
+        })
+      });
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const date = new Date().toISOString().split('T')[0];
+      a.download = `${instructorName.replace(/\s+/g, '_')}_analysis_${date}.csv`;
+      a.click();
+    } catch (err) {
+      alert('Failed to download CSV');
+    }
+  };
+
+  const handleChatSubmit = async () => {
+    if (!chatInput.trim() || chatLoading) return;
+
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setChatLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage,
+          analysisData: analysisData,
+          instructor: instructorName,
+          conversationHistory: chatMessages
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
+      }
+    } catch (err) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Failed to connect to chatbot service.' }]);
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -297,12 +450,26 @@ const DashboardPage = ({ analysisData, onNewUpload, onLogout, isDark, onToggleTh
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <Navbar showActions onNewUpload={onNewUpload} onDownload={handleDownloadReport} onLogout={onLogout} isDark={isDark} onToggleTheme={onToggleTheme} />
+      <Navbar 
+        showActions 
+        onNewUpload={onNewUpload} 
+        onDownload={handleDownloadReport} 
+        onLogout={onLogout} 
+        isDark={isDark} 
+        onToggleTheme={onToggleTheme}
+        instructors={instructors}
+        selectedInstructor={instructorName}
+        onInstructorSelect={onInstructorSelect}
+      />
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className={`text-4xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>AI Feedback Analysis Dashboard</h1>
-        <p className={`text-lg mb-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          Comprehensive insights from {summary.total_responses || 0} student responses
-        </p>
+        <div className="mb-8">
+          <h1 className={`text-4xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Feedback Analysis: {instructorName}
+          </h1>
+          <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Comprehensive insights from {summary.total_responses || 0} student responses
+          </p>
+        </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card title="Total Feedback" value={summary.total_responses || 0} subtitle="Responses analyzed" icon={FileText} color="blue" isDark={isDark} />
@@ -383,7 +550,10 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [isDark, setIsDark] = useState(false);
   const [user, setUser] = useState(null);
+  const [instructors, setInstructors] = useState([]);
+  const [selectedInstructor, setSelectedInstructor] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const handleLogin = (userData) => {
     setUser(userData);
@@ -392,19 +562,65 @@ export default function App() {
 
   const handleLogout = () => {
     setUser(null);
+    setInstructors([]);
+    setSelectedInstructor(null);
     setAnalysisData(null);
     setCurrentPage('login');
   };
 
-  const handleAnalysisComplete = (data) => {
-    setAnalysisData(data);
-    setCurrentPage('dashboard');
+  const handleInstructorsLoaded = (instructorList) => {
+    setInstructors(instructorList);
+    setCurrentPage('select-instructor');
+  };
+
+  const handleInstructorSelect = async (instructor) => {
+    setSelectedInstructor(instructor);
+    setAnalyzing(true);
+    
+    try {
+      const response = await fetch(`${API_URL}/analyze-instructor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: instructor.filename })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAnalysisData(data.data);
+        setCurrentPage('dashboard');
+      } else {
+        alert('Analysis failed: ' + data.error);
+      }
+    } catch (err) {
+      alert('Cannot connect to server');
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const handleNewUpload = () => {
+    setInstructors([]);
+    setSelectedInstructor(null);
     setAnalysisData(null);
     setCurrentPage('upload');
   };
+
+  if (analyzing) {
+    return (
+      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
+        <div className="text-center">
+          <Loader className={`animate-spin mx-auto mb-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} size={48} />
+          <p className={`text-xl ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Analyzing feedback for {selectedInstructor?.name}...
+          </p>
+          <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            This may take a minute
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -412,10 +628,22 @@ export default function App() {
         <LoginPage onLogin={handleLogin} isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
       )}
       {currentPage === 'upload' && (
-        <UploadPage onAnalysisComplete={handleAnalysisComplete} onBack={handleLogout} isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
+        <UploadPage onInstructorsLoaded={handleInstructorsLoaded} onBack={handleLogout} isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
+      )}
+      {currentPage === 'select-instructor' && (
+        <InstructorSelectionPage instructors={instructors} onSelectInstructor={handleInstructorSelect} onBack={handleLogout} isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
       )}
       {currentPage === 'dashboard' && analysisData && (
-        <DashboardPage analysisData={analysisData} onNewUpload={handleNewUpload} onLogout={handleLogout} isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
+        <DashboardPage 
+          analysisData={analysisData} 
+          instructorName={selectedInstructor?.name} 
+          instructors={instructors}
+          onNewUpload={handleNewUpload} 
+          onInstructorSelect={handleInstructorSelect}
+          onLogout={handleLogout} 
+          isDark={isDark} 
+          onToggleTheme={() => setIsDark(!isDark)} 
+        />
       )}
     </div>
   );
